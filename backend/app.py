@@ -15,10 +15,10 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.secret_key = "supersecretkey"
 
 # ---- Utility ----
-def get_diverse_feed(n=50):
+def get_diverse_feed(n=54):
     return df.sample(n).to_dict(orient="records")
 
-def recommend_from_profile(clicked_ids, n=50):
+def recommend_from_profile(clicked_ids, n=54):
     # Average similarity of all clicked games
     indices = [df[df["id"] == cid].index[0] for cid in clicked_ids if cid in df["id"].values]
     if not indices:
@@ -30,7 +30,7 @@ def recommend_from_profile(clicked_ids, n=50):
     rec_indices = [i for i, _ in sim_scores if df.iloc[i]["id"] not in clicked_ids][:n]
     return df.iloc[rec_indices].to_dict(orient="records")
 
-def recommend_from_genres(genres, n=50):
+def recommend_from_genres(genres, n=54):
     mask = df["genres"].apply(lambda g: any(gen in g for gen in genres))
     if mask.sum() == 0:
         return get_diverse_feed(n)
@@ -59,11 +59,11 @@ def feed():
     clicked_games = session.get("clicked", [])
 
     if clicked_games:
-        recs = recommend_from_profile(clicked_games, n=50)
+        recs = recommend_from_profile(clicked_games, n=54)
     elif chosen_genres:
-        recs = recommend_from_genres(chosen_genres, n=50)
+        recs = recommend_from_genres(chosen_genres, n=54)
     else:
-        recs = get_diverse_feed(n=50)
+        recs = get_diverse_feed(n=54)
 
     return render_template("feed.html", recommendations=recs)
 
