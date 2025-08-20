@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<html>
+<head>
+  <title>{{ game.name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script>
+    function toggleDescription() {
+      const desc = document.getElementById("desc-text");
+      const btn = document.getElementById("desc-btn");
+
+      if (desc.classList.contains("collapsed")) {
+        desc.classList.remove("collapsed");
+        btn.innerText = "Read less";
+      } else {
+        desc.classList.add("collapsed");
+        btn.innerText = "Read more";
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="game-detail">
+    <h1>{{ game.name }}</h1>
+
+    {% if game.image %}
+      <img class="game-img" src="{{ game.image }}" alt="{{ game.name }}">
+    {% endif %}
+
+    <p><b>Released:</b> {{ game.released or 'Unknown' }}</p>
+    <p><b>Rating:</b> {{ game.rating or 'N/A' }}</p>
+    <p><b>Genres:</b> {{ game.genres or 'N/A' }}</p>
+    <p><b>Tags:</b> {{ game.tags or 'N/A' }}</p>
+
+    {% if game.description %}
+      <h2>Description</h2>
+      <div id="desc-text" class="collapsed">
+        {{ game.description | replace("###", "<br><br>") | safe }}
+      </div>
+      <button id="desc-btn" onclick="toggleDescription()">Read more</button>
+    {% endif %}
+  </div>
+</body>
+</html>
+
+<h3>Similar Games</h3>
+<div class="card-grid">
+  {% for rec in recommendations %}
+  <a href="{{ url_for('game_detail', game_id=rec['id']) }}" class="card">
+    <img src="{{ rec['image'] if rec['image'] else url_for('static', filename='placeholder.png') }}" alt="{{ rec['name'] }}">
+    <div class="card-body">
+      <h3>{{ rec['name'] }}</h3>
+      <p>{{ rec['genres'] }}</p>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Recommended Games</h2>
+<div class="card-grid">
+  {% for game in recommendations %}
+  <a href="{{ url_for('game_detail', game_id=game['id']) }}" class="card">
+    <img src="{{ game['image'] if game['image'] else url_for('static', filename='placeholder.png') }}" alt="{{ game['name'] }}">
+    <div class="card-body">
+      <h3>{{ game['name'] }}</h3>
+      <p>{{ game['genres'] }}</p>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}
