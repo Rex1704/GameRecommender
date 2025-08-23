@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>My Profile</h2>
+    <div class="card shadow-sm p-4">
+        <div class="d-flex align-items-center mb-4">
+            <img src="{{ url_for('static', filename=user.profile_pic) }}" 
+                 alt="pfp" class="rounded-circle me-3" width="80" height="80">
+            <div>
+                <h4>{{ user.username }}</h4>
+                <p class="text-muted">{{ user.email }}</p>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label>Username</label>
+                <input type="text" class="form-control" name="username" value="{{ user.username }}">
+            </div>
+            <div class="mb-3">
+                <label>Email</label>
+                <input type="email" class="form-control" name="email" value="{{ user.email }}">
+            </div>
+            <div class="mb-3">
+                <label>New Password</label>
+                <input type="password" class="form-control" name="password" placeholder="Leave blank to keep current">
+            </div>
+            <div class="mb-3">
+                <label>Profile Picture</label>
+                <input type="file" class="form-control" name="profile_pic">
+            </div>
+            <button type="submit" class="btn btn-success">Update Profile</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

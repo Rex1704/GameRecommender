@@ -3,7 +3,7 @@
 <html>
 <head>
   <title>{{ game.name }}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <script>
     function toggleDescription() {
       const desc = document.getElementById("desc-text");
@@ -23,9 +23,16 @@
   <div class="game-detail">
     <h1>{{ game.name }}</h1>
 
-    {% if game.image %}
-      <img class="game-img" src="{{ game.image }}" alt="{{ game.name }}">
+    {% if game.background_image %}
+      <img class="game-img" src="{{ game.background_image }}" alt="{{ game.name }}">
     {% endif %}
+    <form action="{{ url_for('main.mark_played', game_id=game.id) }}" method="POST">
+    {% if is_played %}
+      <button type="submit" class="btn btn-success">Played</button>
+    {% else %}
+      <button type="submit" class="btn btn-secondary">Mark Played</button>
+    {% endif %}
+    </form>
 
     <p><b>Released:</b> {{ game.released or 'Unknown' }}</p>
     <p><b>Rating:</b> {{ game.rating or 'N/A' }}</p>
@@ -47,7 +54,7 @@
 <div class="card-grid">
   {% for rec in recommendations %}
   <a href="{{ url_for('main.game_detail', game_id=rec['id']) }}" class="card">
-    <img src="{{ rec['image'] if rec['image'] else url_for('static', filename='placeholder.png') }}" alt="{{ rec['name'] }}">
+    <img src="{{ rec['background_image'] if rec['background_image'] else url_for('static', filename='placeholder.png') }}" alt="{{ rec['name'] }}">
     <div class="card-body">
       <h3>{{ rec['name'] }}</h3>
       <p>{{ rec['genres'] }}</p>

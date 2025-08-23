@@ -1,5 +1,5 @@
 from flask import Flask
-from app.extensions import db, bcrypt, login_manager
+from app.extensions import db, bcrypt, login_manager, migrate
 from app.models import User
 from app.routes import register_blueprints
 import os
@@ -20,13 +20,22 @@ def create_app():
     db.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
+    migrate.init_app(app, db)
 
+    login_manager.login_view = "auth.login"
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
     with app.app_context():
         db.create_all()
+
+        if not User.query.filter_by(role="admin").first():
+            hashed_pw = bcrypt.generate_password_hash("rex1704").decode("utf-8")
+            admin = User(username="admin", email="admin-gamerec@gmail.com", password=hashed_pw, role="admin")
+            db.session.add(admin)
+            db.session.commit()
+            # print("✅ Default admin created: admin@example.com / admin123")
 
     register_blueprints(app)
     return app

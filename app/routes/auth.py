@@ -2,8 +2,17 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app.extensions import db, bcrypt
 from app.models import User
+from werkzeug.utils import secure_filename
+import os
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
+
+UPLOAD_FOLDER = os.path.join("app", "static", "images", "pfp")
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 @bp.route("/signup", methods=["GET", "POST"])
 def signup():
@@ -35,8 +44,35 @@ def login():
             flash("Invalid credentials.", "danger")
     return render_template("login.html")
 
+@bp.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    if request.method == "POST":
+        username = request.form.get("username")
+        email = request.form.get("email")
+        password = request.form.get("password")
+        file = request.files.get("profile_pic")
+
+        if username:
+            current_user.username = username
+        if email:
+            current_user.email = email
+        if password:
+            current_user.password = bcrypt.generate_password_hash(password).decode("utf-8")
+        if file and allowed_file(file.filename):
+            filename = secure_filename(f"user_{current_user.id}_" + file.filename)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(filepath)
+            current_user.profile_pic = f"images/pfp/{filename}"
+
+        db.session.commit()
+        flash("Profile updated!", "success")
+        return redirect(url_for("auth.profile"))
+
+    return render_template("profile.html", user=current_user)
+
 @bp.route("/logout")
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for("auth.login"))
+    return redirect(url_for("main.feed"))

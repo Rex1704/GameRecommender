@@ -1,39 +1,84 @@
+# ml.py
+import os
+import pickle
+import numpy as np
 import pandas as pd
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import TruncatedSVD
-from sklearn.preprocessing import MinMaxScaler, Normalizer
+from sklearn.preprocessing import StandardScaler, Normalizer
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity
-from scipy.sparse import hstack
-import pickle
 
-df = pd.read_csv('games.csv')
-df['features_text'] = df["genres"].fillna('') + " " + df["tags"].fillna('')
 
-# Text features (reduce to ~300 to avoid sparsity)
-vectorizer = TfidfVectorizer(max_features=300, stop_words="english")
-X_text = vectorizer.fit_transform(df["features_text"])
+# --------------------
+# Load data
+# --------------------
+BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_PATH, "..", "data", "model.pkl")
+GAMES_PATH = os.path.join(BASE_PATH, "..", "data", "games.csv")
+df = pd.read_csv(GAMES_PATH)
 
-# Numeric features
-scaler = MinMaxScaler()
-X_num = scaler.fit_transform(df[["rating", "metacritic"]].fillna(0))
+# --------------------
+# Feature engineering
+# --------------------
+# Text: genres + tags
+df["genres"] = df["genres"].fillna("")
+df["tags"] = df.get("tags", "").fillna("")
 
-# Combine
-X = hstack([X_text, X_num])
+df["text_features"] = df["genres"].astype(str) + " " + df["tags"].astype(str)
 
-# Dimensionality reduction (stable with small sample)
-svd = TruncatedSVD(n_components=50, random_state=42)
+# Numeric features: rating, metacritic, release_year
+df["rating"] = df.get("rating", np.nan).fillna(df.get("rating", np.nan).mean())
+df["metacritic"] = df.get("metacritic", np.nan).fillna(df.get("metacritic", np.nan).mean())
+
+if "released" in df.columns:
+    df["release_year"] = pd.to_datetime(df["released"], errors="coerce").dt.year.fillna(0)
+else:
+    df["release_year"] = 0
+
+numeric_features = df[["rating", "metacritic", "release_year"]].values
+
+# --------------------
+# Vectorization
+# --------------------
+print("Vectorizing text features...")
+vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
+X_text = vectorizer.fit_transform(df["text_features"])
+
+# Dimensionality reduction
+print("Reducing dimensions with SVD...")
+svd = TruncatedSVD(n_components=100, random_state=42)
+X_reduced = svd.fit_transform(X_text)
+
+# Normalize text vectors
 normalizer = Normalizer(copy=False)
-X_red = normalizer.fit_transform(svd.fit_transform(X))
+X_text_final = normalizer.fit_transform(X_reduced)
 
-kmeans = KMeans(n_clusters=8, random_state=42, n_init="auto")
-df["cluster"] = kmeans.fit_predict(X_red)
+# Scale numeric features
+scaler = StandardScaler()
+X_num = scaler.fit_transform(numeric_features)
 
-# print(df[["name", "genres", "rating", "cluster"]].head(10))
+# Combine text + numeric features
+X_combined = np.hstack([X_text_final, X_num])
 
-similarity = cosine_similarity(X_red)
+# --------------------
+# Clustering
+# --------------------
+print("Clustering with KMeans...")
+kmeans = KMeans(n_clusters=20, random_state=42, n_init=10)
+df["cluster"] = kmeans.fit_predict(X_combined)
 
-with open("model.pkl", "wb") as f:
+# --------------------
+# Similarity matrix
+# --------------------
+print("Computing cosine similarity matrix...")
+similarity = cosine_similarity(X_combined)
+
+# --------------------
+# Save model
+# --------------------
+with open(MODEL_PATH, "wb") as f:
     pickle.dump((df, vectorizer, scaler, svd, normalizer, kmeans, similarity), f)
 
-# print(recommend_games("Grand Theft Auto V")['name'])
+print("✅ Training complete. Model saved as model.pkl")
