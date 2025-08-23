@@ -25,5 +25,5 @@ Thumbs.db
 instance/
 
 #Dataset/model
-.csv
-.pkl
+*.csv
+*.pkl
