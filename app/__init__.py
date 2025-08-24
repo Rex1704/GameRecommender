@@ -31,8 +31,10 @@ def create_app():
         db.create_all()
 
         if not User.query.filter_by(role="admin").first():
-            hashed_pw = bcrypt.generate_password_hash("rex1704").decode("utf-8")
-            admin = User(username="admin", email="admin-gamerec@gmail.com", password=hashed_pw, role="admin")
+            admin_mail = os.getenv("ADMIN_EMAIL")
+            admin_passwd = os.getenv("ADMIN_PASSWD")
+            hashed_pw = bcrypt.generate_password_hash(admin_passwd).decode("utf-8")
+            admin = User(username="admin", email=admin_mail, password=hashed_pw, role="admin")
             db.session.add(admin)
             db.session.commit()
             # print("✅ Default admin created: admin@example.com / admin123")

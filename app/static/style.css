@@ -99,6 +99,10 @@ body {
   margin-bottom: 20px;
 }
 
+#game-description {
+    text-justify: justify;
+}
+
 #desc-text {
   overflow: hidden;
   transition: max-height 0.3s ease-in-out;
@@ -171,3 +175,25 @@ body {
   background-color: #357ab7;
 }
 
+.star-rating {
+  direction: rtl;
+  display: inline-flex;
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+.star-rating input {
+  display: none;
+}
+
+.star-rating label {
+  color: #ddd;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.star-rating input:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+  color: #f5b301; /* gold */
+}

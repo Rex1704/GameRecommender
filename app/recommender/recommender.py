@@ -71,17 +71,6 @@ def get_diverse_feed(n=60):
     n = min(n, len(df))
     return _enrich_with_details(df.sample(n).to_dict(orient="records"))
 
-def diverse_popular_feed():
-    genres = df["genres"].dropna().str.split(", ")
-    all_genres = sorted({g for sub in genres for g in sub})
-    recs = []
-    for g in all_genres[:10]:  # pick top 10 genres to keep it light
-        mask = df["genres"].apply(lambda x: g in x if isinstance(x, str) else False)
-        top = df[mask].nlargest(5, "rating", "all")  # top 5 per genre
-        top = top.drop_duplicates(subset=['id'])
-        recs.extend(top.to_dict(orient="records"))
-
-    return _enrich_with_details(recs)
 
 def recommend_similar_games(game_id: int, n=20, within_cluster_first=True):
     if game_id not in df["id"].values:
@@ -121,12 +110,18 @@ def _franchise_boost_vector(played_ids: list[int], weight=1.0):
     boost[idxs] = weight
     return boost
 
+
 def _content_profile_sim(clicked_ids: list[int]) -> np.ndarray:
     """Average similarity of clicked games → 1D score per game."""
     idxs = [ID_TO_INDEX[cid] for cid in clicked_ids if cid in ID_TO_INDEX]
     if not idxs:
         return np.zeros(len(df), dtype=np.float32)
-    avg_sim = np.mean(similarity[idxs], axis=0)
+
+    decay = 0.8  # more decay = older clicks contribute less
+    weights = [decay ** (len(idxs) - 1 - i) for i in range(len(idxs))]
+
+    sims = np.vstack([similarity[i] * w for i, w in zip(idxs, weights)])
+    avg_sim = np.mean(sims, axis=0)
     return avg_sim.astype(np.float32)
 
 def _enrich_with_details(games: list[dict]) -> list[dict]:
@@ -142,33 +137,53 @@ def _enrich_with_details(games: list[dict]) -> list[dict]:
     return merged
 
 
+def _rating_boost_vector(user_ratings: dict, weight=1.0):
+    """Turn user ratings into weighted score boosts."""
+    boost = np.zeros(len(df), dtype=np.float32)
+    if not user_ratings:
+        return boost
+
+    for gid, rating in user_ratings.items():
+        if int(gid) not in ID_TO_INDEX:
+            continue
+        idx = ID_TO_INDEX[int(gid)]
+        # normalize rating (1–5 → -1 to +1)
+        norm = (rating - 3) / 2.0
+        boost += norm * similarity[idx] * weight
+    return boost
+
+
 def hybrid_recommend(
     clicked_ids: list[int] | None,
     played_ids: list[int] | None,
+    user_ratings: dict[str:int] | None,
     n=60,
-    w_content=0.6,
-    w_franchise=0.25,
-    w_pop=0.15,
-    exclude_played=True,
+    w_content=0.5,
+    w_franchise=0.2,
+    w_pop=0.1,
+    w_rating=0.2,
     diversify=True,
 ):
     clicked_ids = clicked_ids or []
     played_ids = played_ids or []
+    user_ratings = user_ratings or {}
 
     # Scores
     s_content = _content_profile_sim(clicked_ids)
     s_franchise = _franchise_boost_vector(played_ids, weight=1.0)
     s_pop = POP_SCORES
+    s_rating = _rating_boost_vector(user_ratings, weight=1.0)
 
     # Weighted sum
-    score = w_content * s_content + w_franchise * s_franchise + w_pop * s_pop
+    score = w_content * s_content + w_franchise * s_franchise + w_pop * s_pop + w_rating * s_rating
 
     # Exclude games the user already marked as played
     mask_excl = np.ones(len(df), dtype=bool)
-    if exclude_played and played_ids:
+    if played_ids:
         for pid in played_ids:
             if pid in ID_TO_INDEX:
-                mask_excl[ID_TO_INDEX[pid]] = False
+                idx = ID_TO_INDEX[pid]
+                score[idx] *= 0.6
 
     # Rank
     order = np.argsort(-score)

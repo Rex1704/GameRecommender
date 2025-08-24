@@ -1,10 +1,35 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 p-3 bg-light border-end" id="sidebar collapse d-md-block">
+      <h4 class="mb-4">Profile</h4>
+      <ul class="nav flex-column">
+        <li class="nav-item">
+          <a class="nav-link {% if section == 'general' %}active{% endif %}"
+             href="{{ url_for('auth.profile', section='general') }}">General</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if section == 'played' %}active{% endif %}"
+             href="{{ url_for('auth.profile', section='played') }}">Played Games</a>
+        </li>
+      </ul>
+        <button class="btn btn-outline-secondary d-md-none mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar">
+        Toggle Sidebar
+        </button>
+    </div>
+
+
+
+    <!-- Main content -->
+    <div class="col-md-9 col-lg-10 p-4">
+      {% if section == "general" %}
+        <div class="container mt-4">
     <h2>My Profile</h2>
     <div class="card shadow-sm p-4">
         <div class="d-flex align-items-center mb-4">
-            <img src="{{ url_for('static', filename=user.profile_pic) }}" 
+            <img src="{{ url_for('static', filename=user.profile_pic) }}"
                  alt="pfp" class="rounded-circle me-3" width="80" height="80">
             <div>
                 <h4>{{ user.username }}</h4>
@@ -33,4 +58,31 @@
         </form>
     </div>
 </div>
+      {% elif section == "played" %}
+        <h2>Played Games</h2>
+        {% if played_games %}
+          <div class="row mt5">
+            {% for game in played_games %}
+                <div class="col-md-3 col-sm-6 mb-3">
+                  <a href="{{ url_for('main.game_detail', game_id=game.id) }}" class="text-decoration-none">
+                    <div class="card shadow-sm h-100 hover-card">
+                      <img src="{{ game.background_image or url_for('static', filename='placeholder.png') }}"
+                           class="card-img-top" alt="{{ game.name }}">
+                      <div class="card-body">
+                        <h6 class="card-title text-dark">{{ game.name }}</h6>
+                        <p class="text-muted small mb-0">{{ game.genres }}</p>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted">No played games yet.</p>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
 {% endblock %}
+

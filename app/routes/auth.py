@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app.extensions import db, bcrypt
 from app.models import User
+from app.recommender import get_game_detail
 from werkzeug.utils import secure_filename
 import os
 
@@ -47,6 +48,13 @@ def login():
 @bp.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
+    section = request.args.get("section", "general")
+    played_games = []
+
+    if section == "played":
+        played_ids = current_user.played or []  # make sure played is stored in DB as JSON/array
+        played_games = [get_game_detail(pid) for pid in played_ids if get_game_detail(pid)]
+
     if request.method == "POST":
         username = request.form.get("username")
         email = request.form.get("email")
@@ -69,7 +77,7 @@ def profile():
         flash("Profile updated!", "success")
         return redirect(url_for("auth.profile"))
 
-    return render_template("profile.html", user=current_user)
+    return render_template("profile.html", user=current_user, section=section, played_games=played_games)
 
 @bp.route("/logout")
 @login_required

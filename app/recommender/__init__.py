@@ -4,7 +4,6 @@ from .recommender import (
     recommend_similar_games,
     get_diverse_feed,
     get_game_detail,
-    diverse_popular_feed
 )
 
 __all__ = [
@@ -12,5 +11,4 @@ __all__ = [
     "recommend_similar_games",
     "get_diverse_feed",
     "get_game_detail",
-    "diverse_popular_feed",
 ]

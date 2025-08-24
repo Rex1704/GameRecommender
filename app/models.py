@@ -1,6 +1,7 @@
 from app.extensions import db
 from flask_login import UserMixin
 from sqlalchemy.dialects.sqlite import JSON
+from sqlalchemy.types import PickleType
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -12,6 +13,7 @@ class User(UserMixin, db.Model):
 
     clicked = db.Column(JSON, default=list)  # store game IDs
     played = db.Column(JSON, default=list)
+    ratings = db.Column(PickleType, default=dict)
 
     def __repr__(self):
         return f"<User {self.username}>, Role {self.role}   "
