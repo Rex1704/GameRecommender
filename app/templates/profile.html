@@ -14,6 +14,10 @@
           <a class="nav-link {% if section == 'played' %}active{% endif %}"
              href="{{ url_for('auth.profile', section='played') }}">Played Games</a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link {% if section == 'playlist' %}active{% endif %}"
+             href="{{ url_for('auth.profile', section='playlist') }}">To-Play List</a>
+        </li>
       </ul>
         <button class="btn btn-outline-secondary d-md-none mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar">
         Toggle Sidebar
@@ -26,38 +30,38 @@
     <div class="col-md-9 col-lg-10 p-4">
       {% if section == "general" %}
         <div class="container mt-4">
-    <h2>My Profile</h2>
-    <div class="card shadow-sm p-4">
-        <div class="d-flex align-items-center mb-4">
-            <img src="{{ url_for('static', filename=user.profile_pic) }}"
-                 alt="pfp" class="rounded-circle me-3" width="80" height="80">
-            <div>
-                <h4>{{ user.username }}</h4>
-                <p class="text-muted">{{ user.email }}</p>
+        <h2>My Profile</h2>
+        <div class="card shadow-sm p-4">
+            <div class="d-flex align-items-center mb-4">
+                <img src="{{ url_for('static', filename=user.profile_pic) }}"
+                     alt="pfp" class="rounded-circle me-3" width="80" height="80">
+                <div>
+                    <h4>{{ user.username }}</h4>
+                    <p class="text-muted">{{ user.email }}</p>
+                </div>
             </div>
-        </div>
 
-        <form method="POST" enctype="multipart/form-data">
-            <div class="mb-3">
-                <label>Username</label>
-                <input type="text" class="form-control" name="username" value="{{ user.username }}">
-            </div>
-            <div class="mb-3">
-                <label>Email</label>
-                <input type="email" class="form-control" name="email" value="{{ user.email }}">
-            </div>
-            <div class="mb-3">
-                <label>New Password</label>
-                <input type="password" class="form-control" name="password" placeholder="Leave blank to keep current">
-            </div>
-            <div class="mb-3">
-                <label>Profile Picture</label>
-                <input type="file" class="form-control" name="profile_pic">
-            </div>
-            <button type="submit" class="btn btn-success">Update Profile</button>
-        </form>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label>Username</label>
+                    <input type="text" class="form-control" name="username" value="{{ user.username }}">
+                </div>
+                <div class="mb-3">
+                    <label>Email</label>
+                    <input type="email" class="form-control" name="email" value="{{ user.email }}">
+                </div>
+                <div class="mb-3">
+                    <label>New Password</label>
+                    <input type="password" class="form-control" name="password" placeholder="Leave blank to keep current">
+                </div>
+                <div class="mb-3">
+                    <label>Profile Picture</label>
+                    <input type="file" class="form-control" name="profile_pic">
+                </div>
+                <button type="submit" class="btn btn-success">Update Profile</button>
+            </form>
+        </div>
     </div>
-</div>
       {% elif section == "played" %}
         <h2>Played Games</h2>
         {% if played_games %}
@@ -80,9 +84,29 @@
         {% else %}
           <p class="text-muted">No played games yet.</p>
         {% endif %}
-      {% endif %}
-    </div>
+      {% elif section == "playlist" %}
+        <div class="row mt5">
+          {% for pl in playlists %}
+            <div class="col-md-3 col-sm-6 mb-3">
+              <a href="{{ url_for('playlist.view', playlist_id=pl.id) }}" class="card playlist-card">
+                <div class="card-body text-center">
+                  <h5 class="fw-bold">{{ pl.name }}</h5>
+                </div>
+              </a>
+            </div>
+          {% endfor %}
+            <div class="col-md-3 col-sm-6 mb-3">
+              <form action="{{ url_for('playlist.create_playlist') }}" method="POST">
+                <input type="text" name="name" placeholder="Playlist Name" required>
+                <button type="submit" class="btn btn-primary">Create</button>
+              </form>
+            </div>
+        </div>
+      <!-- Add New Playlist Card -->
+
+    {% endif %}
   </div>
+</div>
 </div>
 {% endblock %}
 

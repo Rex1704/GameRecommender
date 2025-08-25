@@ -25,8 +25,54 @@
           {% if is_played %}Played{% else %}Mark Played{% endif %}
         </button>
       </form>
+
+      <!-- Add to Playlist Button -->
+<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#playlistModal">
+  ➕ Add to To-Play List
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="playlistModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('playlist.add_game', game_id=game.id) }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Add "{{ game.name }}" to Playlist</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Hidden fields for game -->
+          <input type="hidden" name="name" value="{{ game.name }}">
+          <input type="hidden" name="image" value="{{ game.background_image }}">
+
+          <!-- Existing playlists -->
+          {% for pl in current_user.playlists %}
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="playlists" value="{{ pl.id }}" id="pl{{ pl.id }}">
+              <label class="form-check-label" for="pl{{ pl.id }}">{{ pl.name }}</label>
+            </div>
+          {% endfor %}
+
+          <hr>
+          <!-- New playlist -->
+          <label for="newName">Or create new:</label>
+          <input class="form-control" type="text" name="new_name" id="newName" placeholder="New playlist name">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
       {% if is_played %}
-        <h2>Rate: </h2>
+        <h4>Rate: </h4>
         <form action="{{ url_for('main.rate_game', game_id=game.id, rating=0) }}" method="POST" id="rating-form">
         <div class="star-rating">
           {% for r in range(5, 0, -1) %}

@@ -4,6 +4,11 @@ from .recommender import (
     recommend_similar_games,
     get_diverse_feed,
     get_game_detail,
+    extract_franchise_key
+)
+
+from .playlist import (
+    optimize_play_order,
 )
 
 __all__ = [
@@ -11,4 +16,6 @@ __all__ = [
     "recommend_similar_games",
     "get_diverse_feed",
     "get_game_detail",
+    "extract_franchise_key",
+    "optimize_play_order",
 ]

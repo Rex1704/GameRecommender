@@ -15,6 +15,7 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+
 @bp.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
@@ -50,10 +51,14 @@ def login():
 def profile():
     section = request.args.get("section", "general")
     played_games = []
+    playlists = []
 
     if section == "played":
         played_ids = current_user.played or []  # make sure played is stored in DB as JSON/array
         played_games = [get_game_detail(pid) for pid in played_ids if get_game_detail(pid)]
+
+    if section == "playlist":
+        playlists = current_user.playlists
 
     if request.method == "POST":
         username = request.form.get("username")
@@ -77,7 +82,7 @@ def profile():
         flash("Profile updated!", "success")
         return redirect(url_for("auth.profile"))
 
-    return render_template("profile.html", user=current_user, section=section, played_games=played_games)
+    return render_template("profile.html", user=current_user, section=section,played_games=played_games, playlists=playlists)
 
 @bp.route("/logout")
 @login_required

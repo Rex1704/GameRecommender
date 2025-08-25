@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-3">{{ playlist.name }}</h2>
+
+  <div class="d-flex justify-content-between mb-3">
+    <form method="POST" action="{{ url_for('playlist.delete', playlist_id=playlist.id) }}">
+      <button type="submit" class="btn btn-danger">Delete Playlist</button>
+    </form>
+
+    <form method="POST" action="{{ url_for('playlist.arrange_playlist', playlist_id=playlist.id) }}">
+      <div>
+        <select name="order_type" id="order-type" class="form-select d-inline w-auto">
+          <option value="alpha" {% if current_order == "alpha" %}selected{% endif %}>Alphabetical</option>
+          <option value="release" {% if current_order == "release" %}selected{% endif %}>Release Date</option>
+          <option value="special" {% if current_order == "special" %}selected{% endif %}>Special (Optimized)</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Arrange</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card-grid">
+    {% for game in games %}
+    <a href="{{ url_for('main.game_detail', game_id=game['id']) }}" class="card">
+      <img src="{{ game['background_image'] if game['background_image'] else url_for('static', filename='placeholder.png') }}" alt="{{ game['name'] }}">
+      <div class="card-body">
+        <h3>{{ game['name'] }}</h3>
+        <p><b>Genres:</b> {{ game['genres'] }}</p>
+        <p><b>Rating:</b> {{ game['rating'] }}</p>
+        <p><b>Released:</b> {{ game['released'] }}</p>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
