@@ -1,12 +1,18 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, make_response
 from flask_login import login_required, current_user
-from app.extensions import db
+from app.extensions import db, cache
 from app.recommender import (
     get_diverse_feed, hybrid_recommend, recommend_similar_games, get_game_detail
 )
 import json
 
 bp = Blueprint("main", __name__)
+
+
+
+@cache.cached(timeout=600, key_prefix="anon_feed")
+def get_anon_feed():
+    return get_diverse_feed(n=60)
 
 def set_rating(game_id: int, rating: int):
     """Set or update a rating for the current user."""
@@ -66,20 +72,22 @@ def index():
 
 @bp.route("/feed")
 def feed():
+    clicked = []
+    played = []
+    ratings = []
+
     if current_user.is_authenticated:
         clicked = _get_user_list("clicked")
         played = _get_user_list("played")
         ratings = _get_user_list("ratings")
     else:
         clicked = _get_cookie_list("clicked")
-        played = _get_cookie_list("played")
-        ratings = _get_cookie_list("ratings")
 
     if clicked or played:
         recs = hybrid_recommend(clicked_ids=clicked, played_ids=played, user_ratings=ratings, n=40)
     else:
         # fallback → diverse popular feed across genres
-        recs = get_diverse_feed(40)
+        recs = get_anon_feed()
 
     played_list = set(played)
     return render_template("feed.html", recommendations=recs, played_list=played_list)

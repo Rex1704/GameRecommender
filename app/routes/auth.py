@@ -8,7 +8,7 @@ import os
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
-UPLOAD_FOLDER = os.path.join("app", "static", "images", "pfp")
+UPLOAD_FOLDER = os.path.join("..", "static", "images")
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 
 def allowed_file(filename):
@@ -76,7 +76,7 @@ def profile():
             filename = secure_filename(f"user_{current_user.id}_" + file.filename)
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
-            current_user.profile_pic = f"images/pfp/{filename}"
+            current_user.profile_pic = filepath
 
         db.session.commit()
         flash("Profile updated!", "success")

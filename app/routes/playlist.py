@@ -3,13 +3,17 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import ToPlayList, Game
 from app.recommender import optimize_play_order, get_game_detail
+from app.utils import get_cached_order, set_cached_order
+from app.utils import _CACHE
+
+
 
 bp = Blueprint("playlist", __name__, url_prefix="/playlist")
 
 @bp.route("/playlist/<int:playlist_id>/arrange", methods=["POST"])
 @login_required
 def arrange_playlist(playlist_id):
-    order_type = request.form.get("order_type", "alpha")
+    order_type = request.form.get("order_type")
     session["playlist_order"] = order_type  # save choice in cookie
 
     return redirect(url_for("playlist.view", playlist_id=playlist_id))
@@ -20,38 +24,30 @@ def arrange_playlist(playlist_id):
 def view(playlist_id):
     playlist = ToPlayList.query.filter_by(id=playlist_id, user_id=current_user.id).first_or_404()
 
-    enriched_games = []
-    for g in playlist.games:
-        details = get_game_detail(g.id)  # pulls from recommender’s df + details_df
-        if details:
-            enriched_games.append(details)
-        else:
-            enriched_games.append({
-                "id": g.id,
-                "name": g.name,
-                "background_image": url_for("static", filename="placeholder.png"),
-                "genres": "Unknown",
-                "tags": "Unknown",
-                "rating": "N/A",
-                "released": "N/A",
-            })
     if playlist.user_id != current_user.id:
         abort(403)
 
-    order = session.get("playlist_order", "alpha")
-    games = enriched_games
+    game_ids = [g.id for g in playlist.games]
+    order = session.get("playlist_order")
+    cached = get_cached_order(playlist.id, game_ids, order)
 
-    if order == "alpha":
-        ordered_games = sorted(games, key=lambda g: g['name'].lower())
-    elif order == "release":
-        ordered_games = sorted(games, key=lambda g: g['released'] or "9999-12-31")
-    elif order == "time":
-        ordered_games = sorted(games, key=lambda g: g['playtime'] or 0)
-    elif order == "special":
-        games = [g['id'] for g in games]
-        ordered_games = optimize_play_order(games)# your ML/sequels logic
+    if cached:
+        ordered_ids = cached
     else:
-        ordered_games = games
+        if order == "alpha":
+            ordered_ids = sorted(game_ids, key=lambda g: get_game_detail(g)['name'].lower())
+        elif order == "release":
+            ordered_ids = sorted(game_ids, key=lambda g: get_game_detail(g)['released'] or "9999-12-31")
+        elif order == "playtime":
+            ordered_ids = sorted(game_ids, key=lambda g: get_game_detail(g)['playtime'] or 0)
+        elif order == "special":
+            ordered_ids = optimize_play_order(game_ids)
+        else:
+            ordered_ids = game_ids
+
+        set_cached_order(playlist.id, game_ids, order, ordered_ids)
+
+    ordered_games = [get_game_detail(gid) for gid in ordered_ids]
 
     return render_template("playlist.html", playlist=playlist, games=ordered_games, order=order)
 
@@ -88,6 +84,11 @@ def delete(playlist_id):
     flash("Playlist deleted.", "info")
     return redirect(url_for("auth.profile", section="playlist"))
 
+def invalidate_playlist_cache(playlist_id):
+    keys_to_delete = [k for k in _CACHE if k.startswith(str(playlist_id))]
+    for k in keys_to_delete:
+        _CACHE.pop(k, None)
+
 @bp.route("/add/<int:game_id>", methods=["POST"])
 @login_required
 def add_game(game_id):
@@ -103,6 +104,7 @@ def add_game(game_id):
         pl = ToPlayList.query.filter_by(id=pid, user_id=current_user.id).first()
         if pl and game not in pl.games:
             pl.games.append(game)
+        # invalidate_playlist_cache(pid)
 
     # New playlist creation
     new_name = request.form.get("new_name", "").strip()
@@ -122,20 +124,3 @@ def add_game(game_id):
 
     # redirect back to the game page
     return redirect(request.referrer or url_for("auth.profile", section="playlist"))
-
-    #
-    #
-    # game = Game.query.get(game_id)
-    # if not game:
-    #     game = Game(id=game_id, name=game_name, image=game_img)
-    #     db.session.add(game)
-    #
-    # selected_lists = request.form.getlist("playlists")  # list of playlist IDs
-    # for pid in selected_lists:
-    #     pl = ToPlayList.query.get(int(pid))
-    #     if pl and pl.user_id == current_user.id and game not in pl.games:
-    #         pl.games.append(game)
-    #
-    # db.session.commit()
-    # flash("Game added to playlist(s).", "success")
-    # return redirect(request.referrer or url_for("auth.profile", section="playlist"))

@@ -5,7 +5,7 @@
     <!-- Game Image -->
     <div class="col-md-4">
       <div class="card shadow-sm rounded-3">
-        <img src="{{ game.background_image or url_for('static', filename='placeholder.png') }}"
+        <img src="{{ game.background_image if game.background_image else ph_url(game.name|firstcap, 600, 400) }}"
              class="card-img-top rounded-3" alt="{{ game.name }}">
       </div>
     </div>

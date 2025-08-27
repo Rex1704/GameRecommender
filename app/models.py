@@ -1,8 +1,6 @@
 from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.types import PickleType
-
-# app/models.py
-
+from datetime import datetime
 from app import db
 from flask_login import UserMixin
 
@@ -26,24 +24,39 @@ class ToPlayList(db.Model):
 
     games = db.relationship("Game", secondary="playlist_games", backref="playlists")
 
-
-# class ToPlayList(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(120), nullable=False)
-#     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-#
-#     games = db.relationship(
-#         "Game",
-#         secondary=playlist_games,
-#         backref="playlists",
-#         lazy="dynamic"
-#     )
-
 class Game(db.Model):
-    """Store minimal metadata for added games so we don’t lose them."""
-    id = db.Column(db.Integer, primary_key=True)  # RAWG ID
-    name = db.Column(db.String(200))
-    image = db.Column(db.String(300))
+    id = db.Column(db.Integer, primary_key=True)  # rawg ID
+    slug = db.Column(db.String, unique=True, nullable=False)
+    name = db.Column(db.String, nullable=False)
+    description = db.Column(db.Text)
+    released = db.Column(db.Date)
+    rating = db.Column(db.Float)
+    metacritic = db.Column(db.Integer)
+    genres = db.Column(db.String)        # comma-separated
+    tags = db.Column(db.String)          # comma-separated
+    background_image = db.Column(db.String)
+    playtime = db.Column(db.Float)
+    last_updated = db.Column(db.DateTime, default=datetime.now(), onupdate=datetime.now())
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "slug": self.slug,
+            "background_image": self.background_image,
+            "description": self.description,
+            "genres": self.genres,
+            "tags": self.tags,
+            "released": self.released,
+            "metacritic": self.metacritic,
+            "rating": self.rating,
+            "playtime": self.playtime,
+            "last_updated": self.last_updated
+        }
+
+    def __repr__(self):
+        return f"<Game {self.name}>"
+
 
 
 class User(UserMixin, db.Model):

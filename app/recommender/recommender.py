@@ -1,35 +1,24 @@
 import pickle, os
 import numpy as np
 import pandas as pd
+from app.models import Game
 import re
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_PATH, "..", "data", "model.pkl")
-DETAILS_PATH = os.path.join(BASE_PATH, "..", "data", "game_details.csv")
 
 with open(MODEL_PATH, "rb") as f:
     df, vectorizer, scaler, svd, normalizer, kmeans, similarity = pickle.load(f)
 
-if os.path.exists(DETAILS_PATH):
-    details_df = pd.read_csv(DETAILS_PATH)
-else:
-    details_df = pd.DataFrame()
 
 # ---- Helpers ----
 def _norm_text(s: str) -> str:
     return re.sub(r"[^a-z0-9\s-]", "", (s or "").lower()).strip()
 
 def extract_franchise_key(name: str, slug: str) -> str:
-    """
-    Heuristic: use slug base (strip trailing numbers/words like remastered, definitive, goty)
-    and also fallback to first 2-3 tokens of name if needed.
-    """
     s = (slug or _norm_text(name or ""))
-    # remove edition words
     s = re.sub(r"-(remastered|definitive|complete|goty|ultimate|hd|vr|redux)$", "", s)
-    # remove trailing numbers (ii, iii, 2, 3, 2020 etc.)
     s = re.sub(r"-(\d+|[ivx]+)$", "", s)
-    # compress multiple dashes
     s = re.sub(r"-{2,}", "-", s).strip("-")
     if not s:
         tokens = _norm_text(name).split()
@@ -59,11 +48,10 @@ def _popularity_scores(_df: pd.DataFrame):
 
 POP_SCORES = _popularity_scores(df)
 
+POP_SCORES = _popularity_scores(df)
+
 # Quick index lookups
-ID_TO_INDEX = {
-    int(row.id): idx
-    for idx, row in enumerate(df[["id"]].itertuples(index=False))
-}
+ID_TO_INDEX = {int(row.id): idx for idx, row in enumerate(df[["id"]].itertuples(index=False))}
 INDEX_TO_ID = df["id"].to_numpy()
 
 # ---- Public API for app ----
@@ -71,15 +59,13 @@ def get_diverse_feed(n=60):
     n = min(n, len(df))
     return _enrich_with_details(df.sample(n).to_dict(orient="records"))
 
-
 def recommend_similar_games(game_id: int, n=20, within_cluster_first=True):
     if game_id not in df["id"].values:
         return get_diverse_feed(n)
     idx = ID_TO_INDEX[int(game_id)]
-    sims = similarity[idx]  # 1D np.array
+    sims = similarity[idx]
     order = np.argsort(-sims)
 
-    # Optional: prefer same KMeans cluster first
     if within_cluster_first and "cluster" in df.columns:
         c = df.iloc[idx].get("cluster")
         same = [i for i in order if df.iloc[i].get("cluster") == c and INDEX_TO_ID[i] != game_id]
@@ -89,6 +75,7 @@ def recommend_similar_games(game_id: int, n=20, within_cluster_first=True):
         final = [i for i in order if INDEX_TO_ID[i] != game_id][:n]
 
     return _enrich_with_details(df.iloc[final].to_dict(orient="records"))
+
 
 
 def _franchise_boost_vector(played_ids: list[int], weight=1.0):
@@ -125,16 +112,18 @@ def _content_profile_sim(clicked_ids: list[int]) -> np.ndarray:
     return avg_sim.astype(np.float32)
 
 def _enrich_with_details(games: list[dict]) -> list[dict]:
-    """Merge details (image, description, etc.) from details_df into the list of games."""
-    if details_df.empty:
+    if not games:
         return games
-    merged = []
-    for g in games:
-        extra = details_df[details_df["slug"] == g.get("slug")]
-        if not extra.empty:
-            g = {**g, **extra.iloc[0].to_dict()}
-        merged.append(g)
-    return merged
+
+    ids = [g["id"] for g in games if "id" in g]
+    db_games = {g.id: g for g in Game.query.filter(Game.id.in_(ids)).all()}
+
+    return [
+        {**g, **db_games[g["id"]].to_dict()} if g["id"] in db_games else g
+        for g in games
+    ]
+
+
 
 
 def _rating_boost_vector(user_ratings: dict, weight=1.0):
@@ -209,12 +198,6 @@ def hybrid_recommend(
 
 
 def get_game_detail(game_id: int) -> dict:
-    row = df[df["id"] == game_id]
-    if row.empty:
-        return {}
-    game = row.iloc[0].to_dict()
-    if not details_df.empty:
-        more = details_df[details_df["slug"] == game.get("slug")]
-        if not more.empty:
-            game.update(more.iloc[0].to_dict())
-    return game
+    game = Game.query.get(game_id)
+    return game.to_dict() if game else {}
+

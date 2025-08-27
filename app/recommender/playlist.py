@@ -143,6 +143,6 @@ def optimize_play_order(game_ids: list[int]) -> list[dict]:
     while any(franchise_groups.values()):
         for key in list(franchise_groups.keys()):
             if franchise_groups[key]:
-                final_order.append(franchise_groups[key].pop(0))
+                final_order.append(franchise_groups[key].pop(0)['id'])
 
     return final_order
