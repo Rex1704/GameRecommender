@@ -172,7 +172,7 @@ def hybrid_recommend(
         for pid in played_ids:
             if pid in ID_TO_INDEX:
                 idx = ID_TO_INDEX[pid]
-                score[idx] *= 0.6
+                score[idx] *= 0.3
 
     # Rank
     order = np.argsort(-score)

@@ -31,8 +31,8 @@
                     {% if current_user.is_authenticated %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <img src="{{ ph_url(current_user.username, 30, 30) }}"
-                                     alt="pfp" class="rounded-circle me-2" width="30" height="30">
+                                <img src="{% if current_user.profile_pic and current_user.profile_pic.strip() != '' %}{{ url_for('static', filename=current_user.profile_pic) }}{% else %}{{ ph_url(current_user.username, 30, 30) }}{% endif %}"
+                                    alt="pfp" class="rounded-circle me-2" width="30" height="30">
                                 {{ current_user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">

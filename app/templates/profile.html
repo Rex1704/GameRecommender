@@ -33,7 +33,7 @@
         <h2>My Profile</h2>
         <div class="card shadow-sm p-4">
             <div class="profile-header">
-              <img src="{{ ph_url(current_user.username, 100, 100) }}" alt="Profile">
+              <img src="{% if current_user.profile_pic and current_user.profile_pic.strip() != '' %}{{ url_for('static', filename=current_user.profile_pic) }}{% else %}{{ ph_url(current_user.username, 80, 80) }}{% endif %}" alt="Profile">
 
               <div class="profile-info">
                 <h2>{{ current_user.username }}</h2>
@@ -58,6 +58,7 @@
                 <div class="mb-3">
                     <label>Profile Picture</label>
                     <input type="file" class="form-control" name="profile_pic">
+                    
                 </div>
                 <button type="submit" class="btn btn-success">Update Profile</button>
             </form>

@@ -8,7 +8,10 @@ import os
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
-UPLOAD_FOLDER = os.path.join("..", "static", "images")
+BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+
+PROFILE_FOLDER = os.path.join(BASE_PATH, "..", "static", "upload", "profile")
+os.makedirs(PROFILE_FOLDER, exist_ok=True)
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 
 def allowed_file(filename):
@@ -60,7 +63,7 @@ def profile():
     if section == "playlist":
         playlists = current_user.playlists
 
-    if request.method == "POST":
+    if request.method == "POST" and section == "general":
         username = request.form.get("username")
         email = request.form.get("email")
         password = request.form.get("password")
@@ -74,9 +77,9 @@ def profile():
             current_user.password = bcrypt.generate_password_hash(password).decode("utf-8")
         if file and allowed_file(file.filename):
             filename = secure_filename(f"user_{current_user.id}_" + file.filename)
-            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            filepath = os.path.join(PROFILE_FOLDER, filename)
             file.save(filepath)
-            current_user.profile_pic = filepath
+            current_user.profile_pic = f"upload/profile/{filename}"
 
         db.session.commit()
         flash("Profile updated!", "success")
