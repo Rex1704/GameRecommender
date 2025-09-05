@@ -30,7 +30,7 @@ target_metadata = db.Model.metadata
 # ... etc.
 config.set_main_option(
     "sqlalchemy.url",
-    os.getenv("DATABASE_URI")  # must exist in your .env
+    os.getenv("DATABASE_URL")  # must exist in your .env
 )
 
 def run_migrations_offline() -> None:
