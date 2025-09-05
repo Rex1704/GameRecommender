@@ -1,152 +1,132 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container my-4">
-  <div class="row">
-    <!-- Game Image -->
-    <div class="col-md-4">
-      <div class="card shadow-sm rounded-3">
-        <img src="{{ game.background_image if game.background_image else ph_url(game.name|firstcap, 600, 400) }}"
-             class="card-img-top rounded-3" alt="{{ game.name }}">
-      </div>
-    </div>
-
-    <!-- Game Info -->
-    <div class="col-md-8">
-      <h2 class="fw-bold">{{ game.name }}</h2>
-      <p class="text-muted mb-1"><strong>Released:</strong> {{ game.released or "N/A" }}</p>
-      <p class="text-muted mb-1"><strong>Genres:</strong> {{ game.genres or "N/A" }}</p>
-      <p class="text-muted mb-1"><strong>Platforms:</strong> {{ game.platforms or "N/A" }}</p>
-      <p class="text-muted mb-1"><strong>Rating:</strong> ⭐ {{ game.rating or "N/A" }}</p>
-      <p class="text-muted mb-3"><strong>Metacritic:</strong> {{ game.metacritic or "N/A" }}</p>
-
-      <form method="post" action="{{ url_for('main.mark_played', game_id=game.id) }}">
-        <button type="submit"
-                class="btn {% if is_played %}btn-success{% else %}btn-outline-primary{% endif %} btn-sm">
-          {% if is_played %}Played{% else %}Mark Played{% endif %}
-        </button>
-      </form>
-
-      <!-- Add to Playlist Button -->
-<button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#playlistModal">
-  ➕ Add to To-Play List
-</button>
-
-<!-- Modal -->
-<div class="modal fade" id="playlistModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <form method="POST" action="{{ url_for('playlist.add_game', game_id=game.id) }}">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Add "{{ game.name }}" to Playlist</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div class="content my-4">
+    <div class="row">
+        <div class="col-md-4">
+            <img src="{{ game.background_image if game.background_image else ph_url(game.name, 600, 400) }}"
+                 class="img-fluid rounded-3 shadow-lg fade-in-img" alt="{{ game.name }}">
         </div>
 
-        <div class="modal-body">
-          <!-- Hidden fields for game -->
-          <input type="hidden" name="name" value="{{ game.name }}">
-          <input type="hidden" name="image" value="{{ game.background_image }}">
+        <div class="col-md-8">
+            <h1 class="fw-bold display-5">{{ game.name }}</h1>
+            <p class="text-muted"><strong>Released:</strong> {{ game.released or "N/A" }}</p>
+            <p class="text-muted"><strong>Genres:</strong> {{ game.genres or "N/A" }}</p>
+            <p class="text-muted"><strong>Platforms:</strong> {{ game.platforms or "N/A" }}</p>
+            <p class="text-muted"><strong>Rating:</strong> ⭐ {{ game.rating or "N/A" }} | <strong>Metacritic:</strong> {{ game.metacritic or "N/A" }}</p>
 
-          <!-- Existing playlists -->
-          {% for pl in current_user.playlists %}
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="playlists" value="{{ pl.id }}" id="pl{{ pl.id }}">
-              <label class="form-check-label" for="pl{{ pl.id }}">{{ pl.name }}</label>
+            <div class="mt-4 p-3 rounded" >
+                <div class="d-flex flex-wrap align-items-center  gap-3">
+                    <form method="post" action="{{ url_for('main.mark_played', game_id=game.id) }}">
+                        <button type="submit" class="btn {% if is_played %}btn-success{% else %}btn-outline-primary{% endif %}">
+                            {% if is_played %}✓ Played{% else %}Mark as Played{% endif %}
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#playlistModal">
+                        ➕ Add to To-Play List
+                    </button>
+
+                    {% if is_played %}
+                        <form action="{{ url_for('main.rate_game', game_id=game.id, rating=0) }}" method="POST" id="rating-form">
+                            <div class="star-rating">
+                                {% for r in range(5, 0, -1) %}
+                                    <input type="radio" id="star{{ r }}" name="rating" value="{{ r }}"
+                                           {% if current_rating == r %}checked{% endif %}
+                                           onclick="submitRating({{ r }})">
+                                    <label for="star{{ r }}" title="{{ r }} stars">★</label>
+                                {% endfor %}
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
             </div>
-          {% endfor %}
-
-          <hr>
-          <!-- New playlist -->
-          <label for="newName">Or create new:</label>
-          <input class="form-control" type="text" name="new_name" id="newName" placeholder="New playlist name">
         </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save</button>
-        </div>
-      </div>
-    </form>
-  </div>
-</div>
-
-
-
-      {% if is_played %}
-        <h4>Rate: </h4>
-        <form action="{{ url_for('main.rate_game', game_id=game.id, rating=0) }}" method="POST" id="rating-form">
-        <div class="star-rating">
-          {% for r in range(5, 0, -1) %}
-            <input type="radio" id="star{{ r }}" name="rating" value="{{ r }}"
-                   {% if current_rating == r %}checked{% endif %}
-                   onclick="submitRating({{ r }})">
-            <label for="star{{ r }}" title="{{ r }} stars">★</label>
-          {% endfor %}
-        </div>
-        </form>
-      {% endif %}
-      <script>
-        function submitRating(rating) {
-          const form = document.getElementById("rating-form");
-          form.action = "{{ url_for('main.rate_game', game_id=game.id, rating=0) }}".replace("/0", "/" + rating);
-          form.submit();
-        }
-      </script>
     </div>
-  </div>
 
-
- <!-- Game Description -->
-  <div class="row mt-4">
-    <div class="col-12">
-      <h4 class="fw-semibold">Description</h4>
-      <p id="game-description" class="text-secondary" style="white-space: pre-line;">
-        {{ (game.description or "No description available.") | replace("###", "\n") }}
-      </p>
-      <button id="toggle-desc" class="btn btn-link p-0">Show More</button>
+    <div class="row mt-5">
+        <div class="col-12">
+            <h4 class="fw-semibold">Description</h4>
+            <p id="game-description" class="text-secondary" style="white-space: pre-line;">
+                {{ (game.description or "No description available.") }}
+            </p>
+            <button id="toggle-desc" class="btn btn-link p-0">Show More</button>
+        </div>
     </div>
-  </div>
-
-  <!-- Similar Games -->
-  <div class="row mt-5">
+    <br>
     <h4 class="fw-semibold mb-3">Similar Games</h4>
-    {% for rec in recommendations %}
-    <div class="col-md-3 col-sm-6 mb-3">
-      <a href="{{ url_for('main.game_detail', game_id=rec.id) }}" class="text-decoration-none">
-        <div class="card shadow-sm h-100 hover-card">
-          <img src="{{ rec.background_image or url_for('static', filename='placeholder.png') }}"
-               class="card-img-top" alt="{{ rec.name }}">
-          <div class="card-body">
-            <h6 class="card-title text-dark">{{ rec.name }}</h6>
-            <p class="text-muted small mb-0">{{ rec.genres }}</p>
-          </div>
-        </div>
-      </a>
-    </div>
-    {% endfor %}
+    <div class="row mt-5">
+        {% for rec in recommendations %}
+            <div class="col-md-3 col-sm-6 mb-3">
+              <a href="{{ url_for('main.game_detail', game_id=rec.id) }}" class="text-decoration-none">
+                <div class="card h-100 " style="--glow-color-rgb: {{ rec.accent_color }};">
+                  <img src="{{ rec.background_image if rec.background_image else ph_url(rec.name, 300, 400) }}"
+                       class="card-img-top fade-in-img" alt="{{ rec.name }}">
+                  <div class="card-body">
+                    <h6 class="card-title text-dark">{{ rec.name }}</h6>
+                    <p class="text-muted small mb-0">{{ rec.genres }}</p>
+                  </div>
+                </div>
+              </a>
+            </div>
+        {% endfor %}
   </div>
 </div>
 
-<!-- Show More/Less Script -->
+<div class="modal fade" id="playlistModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="POST" action="{{ url_for('playlist.add_game', game_id=game.id) }}">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add "{{ game.name }}" to a list</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Select existing lists:</p>
+                    {% for pl in current_user.playlists %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="playlists" value="{{ pl.id }}" id="pl{{ pl.id }}">
+                            <label class="form-check-label" for="pl{{ pl.id }}">{{ pl.name }}</label>
+                        </div>
+                    {% endfor %}
+                    <hr>
+                    <label for="newName" class="form-label">Or create a new list:</label>
+                    <input class="form-control" type="text" name="new_name" id="newName" placeholder="New playlist name">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  const desc = document.getElementById("game-description");
-  const btn = document.getElementById("toggle-desc");
+    function submitRating(rating) {
+        const form = document.getElementById("rating-form");
+        form.action = "{{ url_for('main.rate_game', game_id=game.id, rating=0) }}".replace("/0", "/" + rating);
+        form.submit();
+    }
+    // Show More/Less Script
+    document.addEventListener("DOMContentLoaded", function() {
+        const desc = document.getElementById("game-description");
+        const btn = document.getElementById("toggle-desc");
+        if (!desc || !btn) return;
 
-  if (desc.innerText.length > 300) {
-    const full = desc.innerText;
-    const short = full.substring(0, 300) + "...";
-    let expanded = false;
-    desc.innerText = short;
+        if (desc.innerText.length > 400) {
+            const fullText = desc.innerText;
+            const shortText = fullText.substring(0, 400) + "...";
+            let isExpanded = false;
+            desc.innerText = shortText;
 
-    btn.style.display = "inline-block";
-    btn.addEventListener("click", () => {
-      expanded = !expanded;
-      desc.innerText = expanded ? full : short;
-      btn.innerText = expanded ? "Show Less" : "Show More";
+            btn.style.display = "inline-block";
+            btn.addEventListener("click", () => {
+                isExpanded = !isExpanded;
+                desc.innerText = isExpanded ? fullText : shortText;
+                btn.innerText = isExpanded ? "Show Less" : "Show More";
+            });
+        } else {
+            btn.style.display = "none";
+        }
     });
-  } else {
-    btn.style.display = "none";
-  }
-});
 </script>
 {% endblock %}

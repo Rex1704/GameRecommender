@@ -7,8 +7,10 @@ from flask_login import UserMixin
 playlist_games = db.Table(
     "playlist_games",
     db.Column("playlist_id", db.Integer, db.ForeignKey("to_play_list.id"), primary_key=True),
-    db.Column("game_id", db.Integer, db.ForeignKey("game.id"), primary_key=True)
+    db.Column("game_id", db.Integer, db.ForeignKey("game.id"), primary_key=True),
+    db.Column("position", db.Integer, nullable=False, default=0)
 )
+
 
 class ToPlayList(db.Model):
     __tablename__ = "to_play_list"
@@ -37,6 +39,7 @@ class Game(db.Model):
     background_image = db.Column(db.String)
     playtime = db.Column(db.Float)
     last_updated = db.Column(db.DateTime, default=datetime.now(), onupdate=datetime.now())
+    accent_color = db.Column(db.String(20))
 
     def to_dict(self):
         return {
@@ -51,7 +54,8 @@ class Game(db.Model):
             "metacritic": self.metacritic,
             "rating": self.rating,
             "playtime": self.playtime,
-            "last_updated": self.last_updated
+            "last_updated": self.last_updated,
+            "accent_color": self.accent_color
         }
 
     def __repr__(self):

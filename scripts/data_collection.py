@@ -137,7 +137,15 @@ def fetch_game_details(slugs, filename=DETAILS_PATH):
 if __name__ == "__main__":
     # Step 1: Collect basic game info
     games_df = pd.read_csv(GAMES_PATH)
-
-    # Step 2: Collect details for each game (based on slugs)
-    slugs = games_df["slug"].dropna().unique().tolist()
-    details_df = fetch_game_details(slugs, filename=DETAILS_PATH)
+    #
+    # # Step 2: Collect details for each game (based on slugs)
+    # slugs = games_df["slug"].dropna().unique().tolist()
+    # details_df = fetch_game_details(slugs, filename=DETAILS_PATH)
+    url = f"{BASE_URL}/games/{games_df['slug'][0]}"
+    g = ""
+    try:
+        response = requests.get(url, params=PARAMS, timeout=10)
+        response.raise_for_status()
+        g = response.json()
+    finally:
+        print(g)

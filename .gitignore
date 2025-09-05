@@ -23,6 +23,7 @@ Thumbs.db
 
 #DB file/folder
 instance/
+*.db
 
 #Dataset/model
 *.csv
