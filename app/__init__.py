@@ -1,8 +1,9 @@
 from flask import Flask
 from app.extensions import db, bcrypt, login_manager, migrate, cache
-from app.models import User
+from app.models import User, Game
 from app.routes import register_blueprints
 from app.utils import placeholder_url, first_cap
+from scripts.seed_games import seed_games
 import os
 from dotenv import load_dotenv
 
@@ -39,6 +40,9 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+
+        if not Game.query.first():
+            seed_games()
 
         if not User.query.filter_by(role="admin").first():
             admin_mail = os.getenv("ADMIN_EMAIL")
