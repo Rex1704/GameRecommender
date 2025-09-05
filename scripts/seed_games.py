@@ -1,7 +1,7 @@
 import os
 import requests
 from datetime import datetime
-from app import create_app, db
+from app import db
 from app.models import Game
 from PIL import Image
 import requests as req
@@ -11,8 +11,6 @@ from colorthief import ColorThief
 # Get RAWG API key
 RAWG_API_KEY = os.getenv("RAWG_API_KEY")  # set in .env / Render dashboard
 BASE_URL = "https://api.rawg.io/api/games"
-
-app = create_app()
 
 def extract_accent_color(image_url):
     """Extract dominant RGB color from an image."""
@@ -52,36 +50,35 @@ def fetch_games(page_size=40, max_games=1000):
         page += 1
 
 def seed_games():
-    with app.app_context():
-        count_before = Game.query.count()
-        print(f"Games in DB before: {count_before}")
+    count_before = Game.query.count()
+    print(f"Games in DB before: {count_before}")
 
-        for rawg_game in fetch_games(max_games=1000):
-            if Game.query.filter_by(slug=rawg_game["slug"]).first():
-                continue  # skip duplicates
+    for rawg_game in fetch_games(max_games=1000):
+        if Game.query.filter_by(slug=rawg_game["slug"]).first():
+            continue  # skip duplicates
 
-            accent_color = extract_accent_color(rawg_game.get("background_image")) if rawg_game.get("background_image") else None
+        accent_color = extract_accent_color(rawg_game.get("background_image")) if rawg_game.get("background_image") else None
 
-            game = Game(
-                id=rawg_game["id"],
-                slug=rawg_game["slug"],
-                name=rawg_game["name"],
-                description=rawg_game.get("description_raw", ""),
-                released=datetime.strptime(rawg_game["released"], "%Y-%m-%d").date() if rawg_game.get("released") else None,
-                rating=rawg_game.get("rating"),
-                metacritic=rawg_game.get("metacritic"),
-                genres=",".join([g["name"] for g in rawg_game.get("genres", [])]),
-                tags=",".join([t["name"] for t in rawg_game.get("tags", [])]),
-                background_image=rawg_game.get("background_image"),
-                playtime=rawg_game.get("playtime"),
-                accent_color=accent_color,
-                last_updated=datetime.now(),
-            )
-            db.session.add(game)
+        game = Game(
+            id=rawg_game["id"],
+            slug=rawg_game["slug"],
+            name=rawg_game["name"],
+            description=rawg_game.get("description_raw", ""),
+            released=datetime.strptime(rawg_game["released"], "%Y-%m-%d").date() if rawg_game.get("released") else None,
+            rating=rawg_game.get("rating"),
+            metacritic=rawg_game.get("metacritic"),
+            genres=",".join([g["name"] for g in rawg_game.get("genres", [])]),
+            tags=",".join([t["name"] for t in rawg_game.get("tags", [])]),
+            background_image=rawg_game.get("background_image"),
+            playtime=rawg_game.get("playtime"),
+            accent_color=accent_color,
+            last_updated=datetime.now(),
+        )
+        db.session.add(game)
 
-        db.session.commit()
-        count_after = Game.query.count()
-        print(f"Games in DB after: {count_after}")
+    db.session.commit()
+    count_after = Game.query.count()
+    print(f"Games in DB after: {count_after}")
 
 if __name__ == "__main__":
     seed_games()
