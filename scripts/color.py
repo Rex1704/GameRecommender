@@ -13,7 +13,7 @@ load_dotenv()
 from app.models import Game
 
 # Set up your database connection
-engine = create_engine(os.getenv('DATABASE_URI'))
+engine = create_engine(os.getenv('DATABASE_URL'))
 Session = sessionmaker(bind=engine)
 session = Session()
 

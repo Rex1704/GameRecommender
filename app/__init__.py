@@ -15,8 +15,8 @@ def create_app():
         template_folder=os.path.join(os.path.dirname(__file__), "templates"),
         static_folder=os.path.join(os.path.dirname(__file__), "static"),
     )
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", "sqlite:///site.db")
-    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "supersecret")
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+    app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
     app.config["SESSION_PERMANENT"] = False
     app.config["SESSION_TYPE"] = "filesystem"
 
