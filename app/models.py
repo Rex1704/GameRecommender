@@ -1,4 +1,4 @@
-from sqlalchemy.dialects.sqlite import JSON
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.types import PickleType
 from datetime import datetime
 from app import db
@@ -37,6 +37,7 @@ class Game(db.Model):
     genres = db.Column(db.String)        # comma-separated
     tags = db.Column(db.String)          # comma-separated
     background_image = db.Column(db.String)
+    screenshots = db.Column(JSON, nullable=True)
     playtime = db.Column(db.Float)
     last_updated = db.Column(db.DateTime, default=datetime.now(), onupdate=datetime.now())
     accent_color = db.Column(db.String(20))
@@ -55,7 +56,8 @@ class Game(db.Model):
             "rating": self.rating,
             "playtime": self.playtime,
             "last_updated": self.last_updated,
-            "accent_color": self.accent_color
+            "accent_color": self.accent_color,
+            "screenshots": eval(str(self.screenshots))
         }
 
     def __repr__(self):

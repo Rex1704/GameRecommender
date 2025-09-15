@@ -63,7 +63,7 @@ def seed_games():
             id=rawg_game["id"],
             slug=rawg_game["slug"],
             name=rawg_game["name"],
-            description=rawg_game.get("description_raw", ""),
+            description=rawg_game.get("description", ""),
             released=datetime.strptime(rawg_game["released"], "%Y-%m-%d").date() if rawg_game.get("released") else None,
             rating=rawg_game.get("rating"),
             metacritic=rawg_game.get("metacritic"),

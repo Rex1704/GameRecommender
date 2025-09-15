@@ -62,7 +62,7 @@
                             <div class="col-md-4 col-sm-6 mb-4">
                                 <div class="card h-100" style="--glow-color-rgb: {{ game.accent_color }};">
                                    <a href="{{ url_for('main.game_detail', game_id=game.id) }}" class="text-decoration-none">
-                                        <img src="{{ game.background_image if game.background_image else ph_url(game.name, 300, 400) }}"
+                                        <img src="{{ thumbnail_url(game.background_image, 300, 200) if game.background_image else ph_url(game.name, 300, 400) }}"
                                              class="card-img-top fade-in-img" alt="{{ game.name }}">
                                         <div class="card-body">
                                             <h6 class="card-title">{{ game.name }}</h6>

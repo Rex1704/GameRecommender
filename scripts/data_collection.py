@@ -1,151 +1,144 @@
 import os
-import requests
-import pandas as pd
-from dotenv import load_dotenv
 import time
+import requests
+from io import BytesIO
+from dotenv import load_dotenv
+from app import create_app, db
+from app.models import Game  # your SQLAlchemy Game model
+import cloudinary.uploader
+import cloudinary
+import json
 
+# Load environment variables
 load_dotenv()
 API_KEY = os.getenv("RAWG_API_KEY")
 
+CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME")
+CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY")
+CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET")
+
+
+
+cloudinary.config(
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET,
+    secure=True
+)
+
 BASE_URL = "https://api.rawg.io/api"
-PARAMS = {"key": API_KEY}
 
-BASE_PATH = os.path.dirname(os.path.abspath(__file__))
-GAMES_PATH = os.path.join(BASE_PATH, "..", "app", "data", "games.csv")
-DETAILS_PATH = os.path.join(BASE_PATH, "..", "app", "data", "game_details.csv")
+app = create_app()
+app.app_context().push()
 
-def fetch_games(n=1000, filename=GAMES_PATH):
-    """Fetch basic game info into games.csv with resume support"""
-    games = []
+def upload_to_cloudinary(image_url, game_id):
+    """Upload image to Cloudinary in WebP and return the secure URL"""
+    response = requests.get(image_url, timeout=10)
+    response.raise_for_status()
+    img_bytes = BytesIO(response.content)
 
-    # Load already collected games
-    if os.path.exists(filename):
-        existing = pd.read_csv(filename)
-        collected_ids = set(existing["id"].tolist())
-        games = existing.to_dict(orient="records")
-        print(f"Resuming from {len(existing)} games already collected.")
-    else:
-        collected_ids = set()
+    result = cloudinary.uploader.upload(
+        img_bytes,
+        public_id=f"games/{game_id}/original",
+        overwrite=True,
+        resource_type="image",
+        format="webp"  # force WebP (can use 'avif' too if supported)
+    )
+    return result["secure_url"]
 
-    page = 1
-    collected = len(collected_ids)
+def fetch_and_update_game_screenshots():
+    games = Game.query.all()
+    for i, game in enumerate(games, 1):
+        print(f"[{i}] Processing {game.name}...")
 
-    while collected < n:
-        url = f"{BASE_URL}/games"
-        params = {**PARAMS, "page": page, "page_size": 40}
+        # Skip if screenshots already exist
+        if game.screenshots:
+            print(" - Screenshots already exist, skipping.")
+            continue
+
+        # Fetch screenshots from RAWG
         try:
-            response = requests.get(url, params=params, timeout=10)
+            url = f"{BASE_URL}/games/{game.id}/screenshots"
+            response = requests.get(url, params={"key": API_KEY}, timeout=10)
             response.raise_for_status()
             data = response.json()
+            raw_screenshots = [s["image"] for s in data.get("results", [])]
         except Exception as e:
-            print(f"Error fetching page {page}: {e}, retrying in 5s...")
-            time.sleep(5)
+            print(f" - Failed to fetch screenshots for {game.name}: {e}")
             continue
 
-        results = data.get("results", [])
-        if not results:
-            break
+        if not raw_screenshots:
+            print(" - No screenshots found.")
+            continue
 
-        for g in results:
-            if g.get("id") in collected_ids:
-                continue  # skip duplicates
+        # Upload screenshots to Cloudinary
+        cloud_screenshots = []
+        for idx, shot_url in enumerate(raw_screenshots, 1):
+            public_id = f"games/{game.id}/screenshot_{idx}"
+            uploaded_url = upload_to_cloudinary(shot_url, public_id)
+            if uploaded_url:
+                cloud_screenshots.append(uploaded_url)
+            time.sleep(0.2)  # avoid spamming RAWG or Cloudinary
 
-            games.append({
-                "id": g.get("id"),
-                "name": g.get("name"),
-                "slug": g.get("slug"),
-                "released": g.get("released"),
-                "rating": g.get("rating"),
-                "metacritic": g.get("metacritic"),
-                "genres": ", ".join([gen["name"] for gen in g.get("genres", [])]),
-                "tags": ", ".join([tag["name"] for tag in g.get("tags", [])]),
-                "platforms": ", ".join([p["platform"]["name"] for p in g.get("platforms", []) if p.get("platform")]),
-            })
-            collected_ids.add(g.get("id"))
+        # Update game record
+        if cloud_screenshots:
+            game.screenshots = json.dumps(cloud_screenshots)  # or use JSON type if Postgres
+            db.session.commit()
+            print(f" - Uploaded {len(cloud_screenshots)} screenshots for {game.name}")
 
-        collected = len(collected_ids)
-        print(f"Collected {collected}/{n} games...")
-        page += 1
-        time.sleep(1)  # prevent rate limit
+        time.sleep(0.4)
 
-        # Save progress every 200 games
-        if collected % 200 == 0:
-            pd.DataFrame(games).to_csv(filename, index=False, encoding="utf-8")
-            print("💾 Progress saved.")
+def update_game_descriptions_and_images():
+    games = Game.query.all()
+    for i, game in enumerate(games, 1):
+        # Skip if already has description and image_url
+        if game.description:
+            continue
 
-    pd.DataFrame(games).to_csv(filename, index=False, encoding="utf-8")
-    print("✅ Saved games.csv")
-    return pd.DataFrame(games)
-
-
-def fetch_game_details(slugs, filename=DETAILS_PATH):
-    """Fetch detailed info for games into game_details.csv with resume support"""
-    details = []
-
-    # Load already collected details
-    if os.path.exists(filename):
-        existing = pd.read_csv(filename)
-        collected_slugs = set(existing["slug"].dropna().tolist())
-        details = existing.to_dict(orient="records")
-        print(f"Resuming from {len(existing)} game details already collected.")
-    else:
-        collected_slugs = set()
-
-    for i, slug in enumerate(slugs, 1):
-        if slug in collected_slugs:
-            continue  # skip already done
-
-        url = f"{BASE_URL}/games/{slug}"
+        # Fetch description from RAWG
         try:
-            response = requests.get(url, params=PARAMS, timeout=10)
+            url = f"{BASE_URL}/games/{game.slug}"
+            response = requests.get(url, params={"key": API_KEY}, timeout=10)
             response.raise_for_status()
-            g = response.json()
+            data = response.json()
+            description = data.get("description_raw", "")
         except Exception as e:
-            print(f"Error fetching details for {slug}: {e}, skipping...")
+            print(f"[{i}] Failed to fetch description for {game.slug}: {e}")
             continue
 
-        details.append({
-            "id": g.get("id"),
-            "name": g.get("name"),
-            "slug": g.get("slug"),
-            "description": g.get("description_raw"),
-            "playtime": g.get("playtime"),
-            "released": g.get("released"),
-            "rating": g.get("rating"),
-            "metacritic": g.get("metacritic"),
-            "genres": ", ".join([gen["name"] for gen in g.get("genres", [])]),
-            "tags": ", ".join([tag["name"] for tag in g.get("tags", [])]),
-            "platforms": ", ".join([p["platform"]["name"] for p in g.get("platforms", []) if p.get("platform")]),
-            "background_image": g.get("background_image"),
-            "website": g.get("website"),
-        })
+        # Upload background_image to Cloudinary if exists
+        image_url = None
+        if data.get("background_image"):
+            try:
+                image_url = upload_to_cloudinary(data["background_image"], game.id)
+            except Exception as e:
+                print(f"[{i}] Failed to upload image for {game.slug}: {e}")
 
-        collected_slugs.add(slug)
+        # Update DB
+        game.description = description
+        if image_url:
+            game.background_image = image_url
 
-        if i % 50 == 0:
-            print(f"Fetched details for {i} games...")
-            pd.DataFrame(details).to_csv(filename, index=False, encoding="utf-8")
-            print("💾 Progress saved.")
+        db.session.commit()
+        print(f"[{i}] Updated {game.name} (description + image_url)")
 
-        time.sleep(1)  # avoid rate limit
-
-    pd.DataFrame(details).to_csv(filename, index=False, encoding="utf-8")
-    print("✅ Saved game_details.csv")
-    return pd.DataFrame(details)
-
+        # Avoid hitting RAWG rate limit
+        time.sleep(0.5)
 
 if __name__ == "__main__":
-    # Step 1: Collect basic game info
-    games_df = pd.read_csv(GAMES_PATH)
+    # update_game_descriptions_and_images()
+    # game_id = 39707 # example game ID
     #
-    # # Step 2: Collect details for each game (based on slugs)
-    # slugs = games_df["slug"].dropna().unique().tolist()
-    # details_df = fetch_game_details(slugs, filename=DETAILS_PATH)
-    url = f"{BASE_URL}/games/{games_df['slug'][0]}"
-    g = ""
-    try:
-        response = requests.get(url, params=PARAMS, timeout=10)
-        response.raise_for_status()
-        g = response.json()
-    finally:
-        print(g)
+    # url = f"https://api.rawg.io/api/games/{game_id}/screenshots"
+    # response = requests.get(url, params={"key": API_KEY})
+    # data = response.json()
+    #
+    # print(data)
+    #
+    # # Each screenshot object has 'id', 'image' (URL)
+    # for shot in data["results"]:
+    #     print(shot["image"])
+
+    fetch_and_update_game_screenshots()
+
+    print("✅ All done!")

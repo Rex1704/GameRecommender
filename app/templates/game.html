@@ -1,18 +1,59 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="content my-4">
+
+<div class="game-detail-wrapper">
+{% if game.background_image %}
+    <div class="position-absolute top-0 start-0 w-100 h-100"
+         style="position: fixed;   /* fixed relative to viewport */
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: url('{{ game.background_image }}') center/cover no-repeat;
+                filter: blur(9px) brightness(0.3);
+                z-index: -1;"></div>
+{% endif %}
+<div class="content my-4 position-relative">
+    <!-- Background image as translucent overlay -->
+
     <div class="row">
         <div class="col-md-4">
-            <img src="{{ game.background_image if game.background_image else ph_url(game.name, 600, 400) }}"
-                 class="img-fluid rounded-3 shadow-lg fade-in-img" alt="{{ game.name }}">
+            <!-- Slideshow / Carousel for screenshots -->
+<!--            <p>Debug: {{ game.screenshots }}</p>-->
+            {% if game.screenshots %}
+
+            <div id="carouselScreenshots" class="carousel slide shadow-lg rounded-3" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    {% for shot in game.screenshots %}
+<!--                        <p>Debug {{ shot }}</p>-->
+                        <div class="carousel-item {% if loop.first %}active{% endif %}">
+
+                            <img src="{{ shot }}" class="d-block w-100 rounded-3 fade-in-img" alt="Screenshot {{ loop.index }}">
+                        </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#carouselScreenshots" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carouselScreenshots" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+            {% else %}
+                <!-- Fallback if no screenshots -->
+                <img src="{{ game.background_image if game.background_image else ph_url(game.name, 600, 400) }}"
+                     class="img-fluid rounded-3 shadow-lg fade-in-img" alt="{{ game.name }}">
+            {% endif %}
         </div>
 
-        <div class="col-md-8">
+        <div class="col-md-8 text-white">
             <h1 class="fw-bold display-5">{{ game.name }}</h1>
-            <p class="text-muted"><strong>Released:</strong> {{ game.released or "N/A" }}</p>
-            <p class="text-muted"><strong>Genres:</strong> {{ game.genres or "N/A" }}</p>
-            <p class="text-muted"><strong>Platforms:</strong> {{ game.platforms or "N/A" }}</p>
-            <p class="text-muted"><strong>Rating:</strong> ⭐ {{ game.rating or "N/A" }} | <strong>Metacritic:</strong> {{ game.metacritic or "N/A" }}</p>
+            <p class="text-light"><strong>Released:</strong> {{ game.released or "N/A" }}</p>
+            <p class="text-light"><strong>Genres:</strong> {{ game.genres or "N/A" }}</p>
+            <p class="text-light"><strong>Platforms:</strong> {{ game.platforms or "N/A" }}</p>
+            <p class="text-light"><strong>Rating:</strong> ⭐ {{ game.rating or "N/A" }} | <strong>Metacritic:</strong> {{ game.metacritic or "N/A" }}</p>
 
             <div class="mt-4 p-3 rounded" >
                 <div class="d-flex flex-wrap align-items-center  gap-3">
@@ -58,8 +99,8 @@
             <div class="col-md-3 col-sm-6 mb-3">
               <a href="{{ url_for('main.game_detail', game_id=rec.id) }}" class="text-decoration-none">
                 <div class="card h-100 " style="--glow-color-rgb: {{ rec.accent_color }};">
-                  <img src="{{ rec.background_image if rec.background_image else ph_url(rec.name, 300, 400) }}"
-                       class="card-img-top fade-in-img" alt="{{ rec.name }}">
+                  <img src="{{ thumbnail_url(rec.background_image, 600, 400) if rec.background_image else ph_url(rec.name, 300, 400) }}"
+                        class="card-img-top" alt="{{ game.name }}" width="300" height="400" loading="lazy">
                   <div class="card-body">
                     <h6 class="card-title text-dark">{{ rec.name }}</h6>
                     <p class="text-muted small mb-0">{{ rec.genres }}</p>
@@ -99,7 +140,7 @@
         </form>
     </div>
 </div>
-
+</div>
 <script>
     function submitRating(rating) {
         const form = document.getElementById("rating-form");

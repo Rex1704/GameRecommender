@@ -60,11 +60,18 @@ def two_shades_hex(name: str):
     return bg, fg
 
 
+def get_thumbnail_url(image_url, width=300, height=400):
+    return image_url.replace(
+        "/upload/",
+        f"/upload/w_{width},h_{height},c_fill,f_auto,q_auto/"
+    )
+
+
 def placeholder_url(name: str, w: int = 300, h: int = 400, text: str | None = None) -> str:
     bg, fg = two_shades_hex(name)
     label = text if text is not None else first_cap(name)
     # Force PNG (placehold.co/<WxH>/<bg>/<fg>.png?text=...)
-    return f"https://placehold.co/{w}x{h}/{bg}/{fg}.png?text={quote(label)}"
+    return f"https://placehold.co/{w}x{h}/{bg}/{fg}.webp?text={quote(label)}"
 
 # role required for some pages like admin which requires admin privilige
 def role_required(role):
