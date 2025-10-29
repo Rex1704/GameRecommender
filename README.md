@@ -1,20 +1,20 @@
-# 🎮 Game Recommender
+# Game Recommender
 
 A personalized **game recommendation web app** built using **Flask, SQLAlchemy, and Bootstrap**.  
 The system leverages **clustering-based recommendation logic** to suggest similar games to users based on their preferences.  
 
 ---
 
-## 🚀 Features
-- 🔍 **Game Search & Details** – Browse games with descriptions, ratings, and release dates.  
-- 🤖 **Clustering-based Recommendations** – Suggests similar games using ML-driven clustering.  
-- 🗄 **Database Integration** – Powered by PostgreSQL with SQLAlchemy ORM.  
-- 🎨 **Responsive UI** – Optimized with Bootstrap, Lighthouse audits, and dark theme support.  
-- 🌐 **Deployed with Flask** – Easy to run and extend.  
+##  Features
+- **Game Search & Details** – Browse games with descriptions, ratings, and release dates.  
+- **Clustering-based Recommendations** – Suggests similar games using ML-driven clustering.  
+- **Database Integration** – Powered by PostgreSQL with SQLAlchemy ORM.  
+- **Responsive UI** – Optimized with Bootstrap, Lighthouse audits, and dark theme support.  
+- **Deployed with Flask** – Easy to run and extend.  
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 ```bash
 GameRecommender/
 │── app/                # Flask application files
@@ -33,7 +33,7 @@ GameRecommender/
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 - **Backend**: Flask, SQLAlchemy  
 - **Database**: PostgreSQL  
 - **Frontend**: Bootstrap, HTML, CSS  
@@ -41,7 +41,7 @@ GameRecommender/
 
 ---
 
-## ⚡ Installation & Setup
+## Installation & Setup
 
 1. **Clone the repository**
    ```bash
@@ -74,39 +74,39 @@ GameRecommender/
 
 ---
 
-## ✨ Feature Showcase
+## Feature Showcase
 
-### 📰 Personalized Feed
+### Personalized Feed
 Stay updated with **tailored game recommendations** right on your homepage.  
 ![Feed Demo](app/static/videos/feed.gif)
 
 ---
 
-### 🔐 Login & Authentication
+### Login & Authentication
 Secure login system with **user accounts** to save preferences.  
 ![Login Demo](app/static/videos/login.gif)
 
 ---
 
-### 🎮 Game Page
+### Game Page
 Dive deep into **detailed game pages** with descriptions, ratings, and release info.  
 ![Game Page Demo](app/static/videos/gamepage.gif)
 
 ---
 
-### 👤 Profile Section
+### Profile Section
 Customize your **profile, preferences, and appearance** for a personal touch.  
 ![Profile Demo](app/static/videos/profile.gif)
 
 ---
 
-### 🎶 Playlist Feature
+### Playlist Feature
 Build your own **game playlists** to track favorites and must-plays.  
 ![Playlist Demo](app/static/videos/playlist.gif)
 
 ---
 
-## 📌 Future Enhancements
+## Future Enhancements
 - Improve **user authentication** for personalized profiles.  
 - Improve recommendation accuracy using **hybrid models**.  
 - Deploy on **Render** for public access.  
